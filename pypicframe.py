@@ -118,18 +118,21 @@ class PyPicFrame(Gtk.Window):
 
     def pick_pic(self):
         """Pick a random picture from the index. Replace displayed image with new image."""
-        num = rand.randint(1, 151)
-        num = round(num, -1) / 10
-        if num > 10:
-            num = 5
-        elif 6 < num <= 10:
-            num = 4
-        elif 3 < num <= 6:
-            num = 3
-        elif 1 < num <= 3:
-            num = 2
+        if self.settings["honor_rating"]:
+            num = rand.randint(1, 151)
+            num = round(num, -1) / 10
+            if num > 10:
+                num = 5
+            elif 6 < num <= 10:
+                num = 4
+            elif 3 < num <= 6:
+                num = 3
+            elif 1 < num <= 3:
+                num = 2
+            else:
+                num = 1
         else:
-            num = 1
+            num = rand.randint(1, 6)
         string = "x" * num
         opts = self.image_index[string]
         image = opts[rand.randint(0, len(opts) - 1)]
