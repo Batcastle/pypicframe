@@ -85,12 +85,17 @@ class PyPicFrame(Gtk.Window):
         """Window for PyPicFrame"""
         pass
 
+
 try:
-    with open("internal_settings.json", "r") as file:
+    with open("/etc/pypicframe/internal_settings.json", "r") as file:
         part = json.load(file)["part"]
 except FileNotFoundError:
-    print("Cannot Find Internal Settings File. Defaulting 'part' to /dev/sda1...")
-    part = "/dev/sda1"
+    try:
+        with open("internal_settings.json", "r") as file:
+            part = json.load(file)["part"]
+    except FileNotFoundError:
+        print("Cannot Find Internal Settings File. Defaulting 'part' to /dev/sda1...")
+        part = "/dev/sda1"
 
 __mount__(part, "/mnt")
 index_main = index_folder("/mnt")
