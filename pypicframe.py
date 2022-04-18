@@ -151,6 +151,8 @@ class PyPicFrame(Gtk.Window):
         image = Gtk.Image.new_from_pixbuf(image)
         self.grid.remove_row(1)
         self.grid.attach(image, 1, 1, 1, 1)
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.fullscreen()
         self.show_all()
         return True
 
@@ -220,8 +222,6 @@ def show_window(errors, index, override):
     window = PyPicFrame(errors, index, image_override=override)
     window.set_decorated(False)
     window.set_resizable(False)
-    window.fullscreen()
-    window.set_position(Gtk.WindowPosition.CENTER)
     window.show_all()
     Gtk.main()
 
