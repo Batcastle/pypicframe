@@ -28,11 +28,12 @@ import random as rand
 import os
 import json
 import subprocess
+import time
 import gi
 
 gi.require_version('Gtk', '3.0')
 
-from gi.repository import Gtk, GdkPixbuf, Gdk
+from gi.repository import Gtk, GdkPixbuf, GLib
 
 
 def __eprint__(*args, **kwargs):
@@ -67,10 +68,16 @@ def __mount__(device, path_dir):
     But, that keeps throwing an 'Invalid Argument' error.
     Calling Mount with check_call is the safer option.
     """
-    try:
-        subprocess.check_call(["sudo", "mount", device, path_dir])
-    except subprocess.CalledProcessError:
-        pass
+    pipe = subprocess.Popen(["sudo", "mount", device, path_dir],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+    out = pipe.stderr.read().decode()
+    print(out)
+    if "already mounted" in out:
+        raise Exception
+    if "does not exist" in out:
+        raise OSError
+
 
 
 class PyPicFrame(Gtk.Window):
@@ -84,20 +91,30 @@ class PyPicFrame(Gtk.Window):
         self.image_index = image_index
         if ((image_index == {}) and (image_override is None)):
             image_override = 2
-        self.grab_errors(errors)
-        self.main(image_override)
+        if image_override != 1:
+            with open("/mnt/settings.json", "r") as file:
+                self.settings = json.load(file)
+        else:
+            print("Cannot find drive...")
+            with open("remote_data/settings.json", "r") as file:
+                self.settings = json.load(file)
+        self.grab_error_files(errors)
 
-    def grab_errors(self, errors):
+        self.check_errors(image_override)
+
+    def grab_error_files(self, errors):
         """Grab error files and pull them into memory"""
         for each in errors["errors"]:
             self.errors.append(GdkPixbuf.Pixbuf.new_from_file("errors/" + each))
 
-    def main(self, image_override):
+    def check_errors(self, image_override):
         """Window for PyPicFrame"""
         if image_override is not None:
             image1 = Gtk.Image.new_from_pixbuf(self.errors[image_override])
             self.grid.attach(image1, 1, 1, 1, 1)
+
             self.show_all()
+
 
     def exit(self, button):
         """Exit"""
@@ -133,7 +150,31 @@ except json.decoder.JSONDecodeError:
     part = "/dev/sda1"
     override = 0
 
-__mount__(part, "/mnt")
-index_main = index_folder("/mnt")
+try:
+    __mount__(part, "/mnt")
+    index_main = index_folder("/mnt")
+except OSError:
+    # pass
+    index_main = {}
+    override = 1
+    print("Drive not mountable.")
+except Exception:
+    index_main = index_folder("/mnt")
+    print("Drive already mounted.")
+
 index_errors = {"errors": ["json_error.svg", "no_drive.svg", "no_pics.svg"]}
+if override == 1:
+    pid = os.fork()
+    """ from here, the CHILD needs to be the UI. The parent should watch for the drive,
+    and once present, kill the child, recurse, then exit."""
+    if pid != 0:
+        while True:
+            try:
+                __mount__(part, "/mnt")
+            except OSError:
+                time.sleep(1)
+                continue
+            os.kill(pid, 9)
+            subprocess.Popen([sys.argv[0]])
+            exit()
 show_window(index_errors, index_main, override)
