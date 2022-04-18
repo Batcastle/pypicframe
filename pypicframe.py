@@ -136,9 +136,13 @@ class PyPicFrame(Gtk.Window):
         path = "/mnt/" + string + "/" + image
         print(f"Chose: {path}")
         # we know what image we want now. Now, remove the old one and use the new one
-        self.grid.remove_row(1)
-        image = GdkPixbuf.Pixbuf.new_from_file(path)
+        try:
+            image = GdkPixbuf.Pixbuf.new_from_file(path)
+        except gi.repository.GLib.GError:
+            self.image_index = index_folder("/mnt")
+            return self.pick_pic()
         image = Gtk.Image.new_from_pixbuf(image)
+        self.grid.remove_row(1)
         self.grid.attach(image, 1, 1, 1, 1)
         self.show_all()
         return True
