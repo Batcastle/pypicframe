@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="1920"
+   height="1080"
+   viewBox="0 0 1920 1080"
+   version="1.1"
+   id="svg5"
+   sodipodi:docname="json_error.svg"
+   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview10"
+     pagecolor="#505050"
+     bordercolor="#ffffff"
+     borderopacity="1"
+     inkscape:pageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     showgrid="false"
+     inkscape:zoom="0.62222222"
+     inkscape:cx="959.46429"
+     inkscape:cy="539.19643"
+     inkscape:window-width="1920"
+     inkscape:window-height="1003"
+     inkscape:window-x="1920"
+     inkscape:window-y="51"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs2">
+    <rect
+       x="208.84956"
+       y="326.67052"
+       width="1620.4671"
+       height="337.34118"
+       id="rect13200" />
+  </defs>
+  <g
+     id="layer1">
+    <rect
+       style="fill:#000000;fill-opacity:1"
+       id="rect216"
+       width="1920"
+       height="1080"
+       x="1.5113558"
+       y="0.41924614" />
+    <text
+       xml:space="preserve"
+       id="text13198"
+       style="font-style:normal;font-weight:normal;font-size:64px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect13200);fill:#000000;fill-opacity:1;stroke:none"
+       x="739.26227"
+       y="0"
+       transform="translate(-11.376735,130.76972)"><tspan
+         x="458.47632"
+         y="386.34942"
+         id="tspan403"><tspan
+           style="font-family:Ubuntu;-inkscape-font-specification:Ubuntu;text-align:center;text-anchor:middle;fill:#ffffff"
+           id="tspan401">Error in JSON file, please check syntax.</tspan></tspan></text>
+  </g>
+</svg>

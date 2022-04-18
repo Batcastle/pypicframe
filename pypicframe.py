@@ -75,29 +75,65 @@ def __mount__(device, path_dir):
 
 class PyPicFrame(Gtk.Window):
     """Main UI Window"""
-    def __init__(self):
+    def __init__(self, errors, image_index, image_override=None):
         """Initialize the Window"""
         Gtk.Window.__init__(self, title="PyPicFrame")
         self.grid = Gtk.Grid(orientation=Gtk.Orientation.VERTICAL)
         self.add(self.grid)
+        self.errors = []
+        self.image_index = image_index
+        if ((image_index == {}) and (image_override is None)):
+            image_override = 2
+        self.grab_errors(errors)
+        self.main(image_override)
 
-    def main(self):
+    def grab_errors(self, errors):
+        """Grab error files and pull them into memory"""
+        for each in errors["errors"]:
+            self.errors.append(GdkPixbuf.Pixbuf.new_from_file("errors/" + each))
+
+    def main(self, image_override):
         """Window for PyPicFrame"""
-        pass
+        if image_override is not None:
+            image1 = Gtk.Image.new_from_pixbuf(self.errors[image_override])
+            self.grid.attach(image1, 1, 1, 1, 1)
+            self.show_all()
+
+    def exit(self, button):
+        """Exit"""
+        Gtk.main_quit("delete-event")
+        self.destroy()
 
 
+def show_window(errors, index, override):
+    """Show Main UI"""
+    window = PyPicFrame(errors, index, image_override=override)
+    window.set_decorated(False)
+    window.set_resizable(False)
+    window.fullscreen()
+    window.set_position(Gtk.WindowPosition.CENTER)
+    window.show_all()
+    Gtk.main()
+
+
+override=None
 try:
-    with open("/etc/pypicframe/internal_settings.json", "r") as file:
-        part = json.load(file)["part"]
-except FileNotFoundError:
     try:
-        with open("internal_settings.json", "r") as file:
+        with open("/etc/pypicframe/internal_settings.json", "r") as file:
             part = json.load(file)["part"]
     except FileNotFoundError:
-        print("Cannot Find Internal Settings File. Defaulting 'part' to /dev/sda1...")
-        part = "/dev/sda1"
+        try:
+            with open("internal_settings.json", "r") as file:
+                part = json.load(file)["part"]
+        except FileNotFoundError:
+            print("Cannot Find Internal Settings File. Defaulting 'part' to /dev/sda1...")
+            part = "/dev/sda1"
+except json.decoder.JSONDecodeError:
+    print("Error Reading Internal Settings File. Defaulting 'part' to /dev/sda1...")
+    part = "/dev/sda1"
+    override = 0
 
 __mount__(part, "/mnt")
 index_main = index_folder("/mnt")
-index_errors = {"errors": []}
-print(json.dumps(index, indent=2))
+index_errors = {"errors": ["json_error.svg", "no_drive.svg", "no_pics.svg"]}
+show_window(index_errors, index_main, override)
