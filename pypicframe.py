@@ -179,7 +179,20 @@ def scale(image):
 
 def scale_down(image, screen_res, image_res):
     """Scale images down"""
-    aspect_ratio = image_res[0] / image_res[1]
+    arh = image_res[0] / image_res[1]
+    arw = image_res[1] / image_res[0]
+    nw = screen_res[1] * arw
+    nh = screen_res[0] * arh
+    screen_area = screen_res[0] * screen_res[1]
+    nha = screen_res[0] * nh
+    nwa = screen_res[1] * nw
+    nhw = abs(nha - screen_area)
+    nww = abs(nwa - screen_area)
+    if nww <= nhw:
+        res = (nw, screen_res[1])
+    else:
+        res = (screen_res[0], nh)
+    return image.scale_simple(res[0], res[1], GdkPixbuf.InterpType.BILINEAR)
 
 
 def scale_up(image, screen_res, image_res):
