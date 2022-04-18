@@ -144,18 +144,60 @@ class PyPicFrame(Gtk.Window):
         except gi.repository.GLib.GError:
             self.image_index = index_folder("/mnt")
             return self.pick_pic()
+        image = scale(image)
         image = Gtk.Image.new_from_pixbuf(image)
         self.grid.remove_row(1)
         self.grid.attach(image, 1, 1, 1, 1)
         self.show_all()
         return True
 
-
     def exit(self, button):
         """Exit"""
         Gtk.main_quit("delete-event")
         self.destroy()
 
+
+def scale(image):
+    """Scale an image up or down depending on what's needed"""
+    screen_res = get_screen_res()
+    image_res = (image.get_width(), image.get_height())
+    # we have horizontal realestate to spare. If vertical realestate matches, and
+    # horizontal realestate is equal to or greater than used realestate, return
+    # the image without modification
+    if (((image_res[1] - 10) <= screen_res[1] <= (image_res[1] + 10)) and (image_res[0] <= screen_res[0])):
+        return image
+    # either the vertical realestate doesn't match, or the horizontal usage is
+    # greater than what we have, or both
+    # scale down situations first
+    if image_res[1] > screen_res[1]:
+        return scale_up(image, screen_res, image_res)
+    if image_res[0] > screen_res[0]:
+        return scale_down(image, screen_res, image_res)
+    if image_res[1] < screen_res[1]:
+        return scale_up(image, screen_res, image_res)
+
+
+def scale_down(image, screen_res, image_res):
+    """Scale images down"""
+    aspect_ratio = image_res[0] / image_res[1]
+
+
+def scale_up(image, screen_res, image_res):
+    """Scale images up"""
+    aspect_ratio = image_res[0] / image_res[1]
+    new_width = screen_res[1] * aspect_ratio
+    return image.scale_simple(new_width, screen_res[1],
+                              GdkPixbuf.InterpType.BILINEAR)
+
+
+def get_screen_res():
+    """Get screen resolution"""
+    results = check_output(['xrandr']).decode().split("current")[1].split(",")[0]
+    width = results.split("x")[0].strip()
+    height = results.split("x")[1].strip()
+    width = int(width)
+    height = int(height)
+    return (width, height)
 
 def show_window(errors, index, override):
     """Show Main UI"""
