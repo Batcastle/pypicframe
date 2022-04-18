@@ -134,7 +134,10 @@ class PyPicFrame(Gtk.Window):
         else:
             num = rand.randint(1, 6)
         string = "x" * num
-        opts = self.image_index[string]
+        try:
+            opts = self.image_index[string]
+        except KeyError:
+            return self.pick_pic()
         image = opts[rand.randint(0, len(opts) - 1)]
         path = "/mnt/" + string + "/" + image
         print(f"Chose: {path}")
@@ -205,7 +208,7 @@ def scale_up(image, screen_res, image_res):
 
 def get_screen_res():
     """Get screen resolution"""
-    results = check_output(['xrandr']).decode().split("current")[1].split(",")[0]
+    results = subprocess.check_output(['xrandr']).decode().split("current")[1].split(",")[0]
     width = results.split("x")[0].strip()
     height = results.split("x")[1].strip()
     width = int(width)
@@ -254,8 +257,8 @@ except Exception:
 
 index_errors = {"errors": ["json_error.svg", "no_drive.svg", "no_pics.svg"]}
 if override == 1:
-    pid = os.fork()
     print("FORKED!")
+    pid = os.fork()
     """ from here, the CHILD needs to be the UI. The parent should watch for the drive,
     and once present, kill the child, recurse, then exit."""
     if pid != 0:
