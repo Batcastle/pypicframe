@@ -1,7 +1,7 @@
 #!/bin/bash
 # -*- coding: utf-8 -*-
 #
-#  setup.sh
+#  uninstall.sh
 #
 #  Copyright 2022 Thomas Castleman <contact@draugeros.org>
 #
@@ -21,12 +21,9 @@
 #  MA 02110-1301, USA.
 #
 #
-sudo groupadd mount
-sudo usermod -aG mount $(whoami)
-sudo mkdir /etc/pypicframe
-sudo ln -s "$PWD/remote_data" /etc/pypicframe/remote_data
-sudo ln -s "$PWD/errors" /etc/pypicframe/errors
-sudo ln -s "$PWD/internal_settings.json" /etc/pypicframe/internal_settings.json
-sudo ln -s "$PWD/system_config/sudoers" /etc/sudoers.d/pypicframe
-sudo ln -s "$PWD/pypicframe.py" /usr/local/bin/pypicframe
-sudo ln -s "$PWD/system_config/pypicframe.desktop" /etc/xdg/autostart/pypicframe.desktop
+sudo rm -rfv /etc/pypicframe
+sudo rm -rfv /usr/local/bin/pypicframe
+sudo rm -rfv /etc/xdg/autostart/pypicframe.desktop
+g=$(groups | sed 's/mount //g')
+sudo usermod -G $g
+sudo groupdel mount
