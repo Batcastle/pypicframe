@@ -27,4 +27,4 @@ sudo mkdir /etc/pypicframe
 sudo ln -s "$PWD/internal_settings.json" /ets/pypicframe/internal_settings.json
 sudo ln -s "$PWD/system_config/sudoers" /etc/sudoers.d/pypicframe
 sudo ln -s "$PWD/pypicframe.py" /usr/local/bin/pypicframe
-sudo ln -s "$PWD/system_config/xsession.desktop" /usr/share/xsessions/pypicframe.desktop
+sudo ln -s "$PWD/system_config/pypicframe.desktop" /etc/xdg/autostart/pypicframe.desktop

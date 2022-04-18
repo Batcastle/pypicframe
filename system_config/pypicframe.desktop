@@ -1,6 +1,7 @@
 [Desktop Entry]
 Name=PyPicFrame
 Comment=Python-based Smart Picture Frame software for the Raspberry Pi and similar SBCs
-Exec=/usr/local/pypicframe
+Exec=/usr/local/bin/pypicframe
 Icon=
 Type=Application
+Name[en_US]=pypicframe.desktop
