@@ -23,4 +23,8 @@
 #
 sudo groupadd mount
 sudo usermod -aG mount $(whoami)
-echo "%mount ALL=(ALL) NOPASSWD: /usr/bin/mount, /usr/bin/umount" | sudo tee -a /etc/sudoers
+sudo mkdir /etc/pypicframe
+sudo ln -s "$PWD/internal_settings.json" /ets/pypicframe/internal_settings.json
+sudo ln -s "$PWD/system_config/sudoers" /etc/sudoers.d/pypicframe
+sudo ln -s "$PWD/pypicframe.py" /usr/local/bin/pypicframe
+sudo ln -s "$PWD/system_config/xsession.desktop" /usr/share/xsessions/pypicframe.desktop

@@ -1,0 +1,2 @@
+# This file is read by sudo to allow pypicframe to mount the designated drive automatically
+%mount ALL=(ALL) NOPASSWD: /usr/bin/mount, /usr/bin/umount
