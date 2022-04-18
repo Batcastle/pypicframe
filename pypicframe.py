@@ -98,9 +98,11 @@ class PyPicFrame(Gtk.Window):
             print("Cannot find drive...")
             with open("remote_data/settings.json", "r") as file:
                 self.settings = json.load(file)
+        self.settings["show_for"] *= 1000
         self.grab_error_files(errors)
-
         self.check_errors(image_override)
+        self.pick_pic()
+        GLib.timeout_add(self.settings["show_for"], self.pick_pic)
 
     def grab_error_files(self, errors):
         """Grab error files and pull them into memory"""
@@ -110,10 +112,36 @@ class PyPicFrame(Gtk.Window):
     def check_errors(self, image_override):
         """Window for PyPicFrame"""
         if image_override is not None:
-            image1 = Gtk.Image.new_from_pixbuf(self.errors[image_override])
-            self.grid.attach(image1, 1, 1, 1, 1)
-
+            image = Gtk.Image.new_from_pixbuf(self.errors[image_override])
+            self.grid.attach(image, 1, 1, 1, 1)
             self.show_all()
+
+    def pick_pic(self):
+        """Pick a random picture from the index. Replace displayed image with new image."""
+        num = rand.randint(1, 151)
+        num = round(num, -1) / 10
+        if num > 10:
+            num = 5
+        elif 6 < num <= 10:
+            num = 4
+        elif 3 < num <= 6:
+            num = 3
+        elif 1 < num <= 3:
+            num = 2
+        else:
+            num = 1
+        string = "x" * num
+        opts = self.image_index[string]
+        image = opts[rand.randint(0, len(opts) - 1)]
+        path = "/mnt/" + string + "/" + image
+        print(f"Chose: {path}")
+        # we know what image we want now. Now, remove the old one and use the new one
+        self.grid.remove_row(1)
+        image = GdkPixbuf.Pixbuf.new_from_file(path)
+        image = Gtk.Image.new_from_pixbuf(image)
+        self.grid.attach(image, 1, 1, 1, 1)
+        self.show_all()
+        return True
 
 
     def exit(self, button):
@@ -165,6 +193,7 @@ except Exception:
 index_errors = {"errors": ["json_error.svg", "no_drive.svg", "no_pics.svg"]}
 if override == 1:
     pid = os.fork()
+    print("FORKED!")
     """ from here, the CHILD needs to be the UI. The parent should watch for the drive,
     and once present, kill the child, recurse, then exit."""
     if pid != 0:
