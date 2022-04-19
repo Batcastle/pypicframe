@@ -28,5 +28,6 @@ sudo ln -s "$PWD/remote_data" /etc/pypicframe/remote_data
 sudo ln -s "$PWD/errors" /etc/pypicframe/errors
 sudo ln -s "$PWD/internal_settings.json" /etc/pypicframe/internal_settings.json
 sudo ln -s "$PWD/system_config/sudoers" /etc/sudoers.d/pypicframe
+sudo chown root:root /etc/sudoers.d/pypicframe
 sudo ln -s "$PWD/pypicframe.py" /usr/local/bin/pypicframe
 sudo ln -s "$PWD/system_config/pypicframe.desktop" /etc/xdg/autostart/pypicframe.desktop
