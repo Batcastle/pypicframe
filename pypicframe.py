@@ -29,6 +29,7 @@ import os
 import json
 import subprocess
 import time
+import shutil
 import gi
 
 gi.require_version('Gtk', '3.0')
@@ -255,7 +256,25 @@ except Exception:
     index_main = index_folder("/mnt")
     print("Drive already mounted.")
 
-index_errors = {"errors": ["json_error.svg", "no_drive.svg", "no_pics.svg"]}
+index_errors = {"errors": ["json_error.svg", "no_drive.svg", "no_pics.svg", "new_drive.svg"]}
+if ((index_main == {}) and (override is None)):
+    # check if folders exist
+    ls = os.listdir("/mnt")
+    total = 0
+    string = "x"
+    for each in range(1, 6):
+        if (string * each) not in ls:
+            total += 1
+    if not os.path.exists("/mnt/settings.json"):
+        total += 1
+    if total >= 5:
+        override = 3
+    else:
+        for each in range(1, 6):
+            if (string * each) not in ls:
+                os.mkdir("/mnt/" + (string * each))
+        if not os.path.exists("/mnt/settings.json"):
+            shutil.copyfile("remote_data/settings.json", "/mnt/settings.json")
 if override == 1:
     print("FORKED!")
     pid = os.fork()
@@ -271,4 +290,22 @@ if override == 1:
             os.kill(pid, 9)
             subprocess.Popen([sys.argv[0]])
             exit()
+if override == 3:
+    print("FORKED!")
+    pid = os.fork()
+    """ from here, the CHILD needs to be the UI. The parent should set up the drive,
+    and once done, kill the child, recurse, then exit."""
+    if pid != 0:
+        time.sleep(10)
+        # set up the drive
+        if not os.path.exists("/mnt/README.txt"):
+            shutil.copyfile("remote_data/README.txt", "/mnt/README.txt")
+        if not os.path.exists("/mnt/settings.json"):
+            shutil.copyfile("remote_data/settings.json", "/mnt/settings.json")
+        string = "x"
+        for each in range(1, 6):
+            os.mkdir("/mnt/" + (string * each))
+        os.kill(pid, 9)
+        subprocess.Popen([sys.argv[0]])
+        exit()
 show_window(index_errors, index_main, override)
