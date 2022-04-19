@@ -110,7 +110,7 @@ class PyPicFrame(Gtk.Window):
         self.image_index = image_index
         if ((image_index == {}) and (image_override is None)):
             image_override = 2
-        if image_override != 1:
+        if image_override not in (1, 3):
             with open("/mnt/settings.json", "r") as file:
                 self.settings = json.load(file)
         else:
@@ -119,26 +119,32 @@ class PyPicFrame(Gtk.Window):
                 self.settings = json.load(file)
         self.settings["show_for"] *= 1000
         self.grab_error_files(errors)
-        self.check_errors(image_override)
+        overridden = self.check_errors(image_override)
+        if overridden:
+            return
         self.pick_pic()
         GLib.timeout_add(self.settings["show_for"], self.pick_pic)
 
     def grab_error_files(self, errors):
         """Grab error files and pull them into memory"""
         for each in errors["errors"]:
+            print(f"Grabbing errors/{each}")
             self.errors.append(GdkPixbuf.Pixbuf.new_from_file("errors/" + each))
 
     def check_errors(self, image_override):
         """Window for PyPicFrame"""
         if image_override is not None:
             image = Gtk.Image.new_from_pixbuf(self.errors[image_override])
+            self.grid.remove_row(1)
             self.grid.attach(image, 1, 1, 1, 1)
-            self.show_all()
+            self.display()
+            return True
+        return False
 
     def pick_pic(self):
         """Pick a random picture from the index. Replace displayed image with new image."""
         if self.settings["honor_rating"]:
-            num = rand.randint(1, 151)
+            num = rand.randint(1, 150)
             num = round(num, -1) / 10
             if num > 10:
                 num = 5
@@ -157,7 +163,10 @@ class PyPicFrame(Gtk.Window):
             opts = self.image_index[string]
         except KeyError:
             return self.pick_pic()
-        image = opts[rand.randint(0, len(opts) - 1)]
+        if len(opts) > 1:
+            image = opts[rand.randint(0, len(opts) - 1)]
+        else:
+            image = opts[0]
         path = "/mnt/" + string + "/" + image
         print(f"Chose: {path}")
         # we know what image we want now. Now, remove the old one and use the new one
@@ -170,10 +179,14 @@ class PyPicFrame(Gtk.Window):
         image = Gtk.Image.new_from_pixbuf(image)
         self.grid.remove_row(1)
         self.grid.attach(image, 1, 1, 1, 1)
+        self.display()
+        return True
+
+    def display(self):
+        """handle show_all() calls"""
         self.set_position(Gtk.WindowPosition.CENTER)
         self.fullscreen()
         self.show_all()
-        return True
 
     def exit(self, button):
         """Exit"""
