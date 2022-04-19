@@ -318,4 +318,18 @@ if override == 3:
         os.kill(pid, 9)
         subprocess.Popen([sys.argv[0]])
         exit()
+if override == 2:
+    print("FORKED!")
+    pid = os.fork()
+    """ from here, the CHILD needs to be the UI. The parent should watch for images.
+    Once images are found, it should kill the child, recurse, then exit."""
+    if pid != 0:
+        while True:
+            index_main = index_folder("/mnt")
+            if index_main != {}:
+                break
+            time.sleep(3)
+        os.kill(pid, 9)
+        subprocess.Popen([sys.argv[0]])
+        exit()
 show_window(index_errors, index_main, override)
