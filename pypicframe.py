@@ -46,6 +46,8 @@ if sys.version_info[0] == 2:
     __eprint__("Please run with Python 3 as Python 2 is End-of-Life.")
     exit(2)
 
+# supported file types
+file_types = ("jpg", "jpeg", "jpe", "png", "svg", "gif", "tif", "tiff")
 
 def index_folder(folder):
     """Get contents of all necessary files in remote settings folder"""
@@ -61,6 +63,14 @@ def index_folder(folder):
             for each1 in enumerate(db[each]):
                 if os.path.isdir(folder + "/" + each + "/" + each1[1]):
                     del db[each][each1[0]]
+                if each1[1].split(".")[-1].lower() not in file_types:
+                    del db[each][each1[0]]
+    delete = []
+    for each in db:
+        if db[each] == []:
+            delete.append(each)
+    for each in delete:
+        del db[each]
     return db
 
 def __mount__(device, path_dir):
