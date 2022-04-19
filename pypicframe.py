@@ -49,6 +49,14 @@ if sys.version_info[0] == 2:
 # supported file types
 file_types = ("jpg", "jpeg", "jpe", "png", "svg", "gif", "tif", "tiff")
 
+# check to make sure we are running in a good place
+ls = os.listdir()
+if "errors" not in ls:
+    try:
+        os.chdir("/etc/pypicframe")
+    except FileNotFoundError:
+        print("Data not available in current directory. Either install PyPicFrame to your system or run from within the local git repo.")
+        exit(2)
 def index_folder(folder):
     """Get contents of all necessary files in remote settings folder"""
     db = {}
