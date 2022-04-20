@@ -132,7 +132,9 @@ class PyPicFrame(Gtk.Window):
         """Grab error files and pull them into memory"""
         for each in errors["errors"]:
             print(f"Grabbing errors/{each}")
-            self.errors.append(GdkPixbuf.Pixbuf.new_from_file("errors/" + each))
+            image = GdkPixbuf.Pixbuf.new_from_file("errors/" + each)
+            image = scale(image)
+            self.errors.append(image)
 
     def check_errors(self, image_override):
         """Window for PyPicFrame"""
