@@ -30,6 +30,7 @@ import json
 import subprocess
 import time
 import shutil
+from Xlib.display import Display
 import gi
 
 gi.require_version('Gtk', '3.0')
@@ -57,6 +58,8 @@ if "errors" not in ls:
     except FileNotFoundError:
         print("Data not available in current directory. Either install PyPicFrame to your system or run from within the local git repo.")
         exit(2)
+
+
 def index_folder(folder):
     """Get contents of all necessary files in remote settings folder"""
     db = {}
@@ -81,6 +84,7 @@ def index_folder(folder):
         del db[each]
     return db
 
+
 def __mount__(device, path_dir):
     """Mount device at path
     It would be much lighter weight to use ctypes to do this
@@ -96,7 +100,6 @@ def __mount__(device, path_dir):
         raise Exception
     if "does not exist" in out:
         raise OSError
-
 
 
 class PyPicFrame(Gtk.Window):
@@ -242,12 +245,8 @@ def scale_up(image, screen_res, image_res):
 
 def get_screen_res():
     """Get screen resolution"""
-    results = subprocess.check_output(['xrandr']).decode().split("current")[1].split(",")[0]
-    width = results.split("x")[0].strip()
-    height = results.split("x")[1].strip()
-    width = int(width)
-    height = int(height)
-    return (width, height)
+    screen = Display(':0').screen()
+    return (int(screen.width_in_pixels), int(screen.height_in_pixels))
 
 def show_window(errors, index, override):
     """Show Main UI"""
