@@ -167,6 +167,15 @@ class PyPicFrame(Gtk.Window):
         try:
             opts = self.image_index[string]
         except KeyError:
+            test = index_folder("/mnt")
+            if test == {}:
+                # the drive has likely been removed and has not been reinserted yet
+                # since we don't cache all the images into RAM, we can't do anything other
+                # than throw up an error since those are stored internally AND cached
+                self.restart()
+            # this MIGHT happen, but shouldn't. Essentially what is happening if we get here is that
+            # files changed on the drive while we weren't looking
+            self.image_index = test
             return self.pick_pic()
         if len(opts) > 1:
             image = opts[rand.randint(0, len(opts) - 1)]
@@ -193,10 +202,13 @@ class PyPicFrame(Gtk.Window):
         self.fullscreen()
         self.show_all()
 
-    def exit(self, button):
+    def restart(self, button):
         """Exit"""
         Gtk.main_quit("delete-event")
         self.destroy()
+        subprocess.Popen([sys.argv[0]])
+        exit()
+
 
 
 def scale(image):
