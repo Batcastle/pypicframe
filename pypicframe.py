@@ -133,7 +133,7 @@ class PyPicFrame(Gtk.Window):
         for each in errors["errors"]:
             print(f"Grabbing errors/{each}")
             image = GdkPixbuf.Pixbuf.new_from_file("errors/" + each)
-            image = scale(image)
+            image = scale(image)[0]
             self.errors.append(image)
 
     def check_errors(self, image_override):
@@ -190,16 +190,20 @@ class PyPicFrame(Gtk.Window):
             self.image_index = index_folder("/mnt")
             return self.pick_pic()
         image = scale(image)
-        image = Gtk.Image.new_from_pixbuf(image)
+        image[0] = Gtk.Image.new_from_pixbuf(image[0])
         self.grid.remove_row(1)
-        self.grid.attach(image, 1, 1, 1, 1)
-        self.display()
+        self.grid.attach(image[0], 1, 1, 1, 1)
+        self.display(resolution=image[1])
         return True
 
-    def display(self):
+    def display(self, resolution=get_screen_res()):
         """handle show_all() calls"""
+        res = get_screen_res()
+        if (res[0] - 10) > resolution[0]:
+            self.unfullscreen()
+        else:
+            self.fullscreen()
         self.set_position(Gtk.WindowPosition.CENTER)
-        self.fullscreen()
         self.show_all()
 
     def restart(self, button):
@@ -219,7 +223,7 @@ def scale(image):
     # horizontal realestate is equal to or greater than used realestate, return
     # the image without modification
     if (((image_res[1] - 10) <= screen_res[1] <= (image_res[1] + 10)) and (image_res[0] <= screen_res[0])):
-        return image
+        return [image, image_res]
     # either the vertical realestate doesn't match, or the horizontal usage is
     # greater than what we have, or both
     # scale down situations first
@@ -246,15 +250,17 @@ def scale_down(image, screen_res, image_res):
         res = (nw, screen_res[1])
     else:
         res = (screen_res[0], nh)
-    return image.scale_simple(res[0], res[1], GdkPixbuf.InterpType.BILINEAR)
+    return [image.scale_simple(res[0], res[1],
+                               GdkPixbuf.InterpType.BILINEAR), res]
 
 
 def scale_up(image, screen_res, image_res):
     """Scale images up"""
     aspect_ratio = image_res[0] / image_res[1]
     new_width = screen_res[1] * aspect_ratio
-    return image.scale_simple(new_width, screen_res[1],
-                              GdkPixbuf.InterpType.BILINEAR)
+    return [image.scale_simple(new_width, screen_res[1],
+                              GdkPixbuf.InterpType.BILINEAR),
+            (new_width, screen_res[1])]
 
 
 def get_screen_res():
