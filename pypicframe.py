@@ -102,6 +102,12 @@ def __mount__(device, path_dir):
         raise OSError
 
 
+def get_screen_res():
+    """Get screen resolution"""
+    screen = Display(':0').screen()
+    return (int(screen.width_in_pixels), int(screen.height_in_pixels))
+
+
 class PyPicFrame(Gtk.Window):
     """Main UI Window"""
     def __init__(self, errors, image_index, image_override=None):
@@ -262,11 +268,6 @@ def scale_up(image, screen_res, image_res):
                               GdkPixbuf.InterpType.BILINEAR),
             (new_width, screen_res[1])]
 
-
-def get_screen_res():
-    """Get screen resolution"""
-    screen = Display(':0').screen()
-    return (int(screen.width_in_pixels), int(screen.height_in_pixels))
 
 def show_window(errors, index, override):
     """Show Main UI"""
