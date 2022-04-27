@@ -32,3 +32,4 @@ sudo chown root:root /etc/sudoers.d/pypicframe
 sudo ln -s "$PWD/pypicframe.py" /usr/local/bin/pypicframe
 sudo ln -s "$PWD/system_config/pypicframe.desktop" /etc/xdg/autostart/pypicframe.desktop
 pip3 install dependencies/Python/*
+sudo apt install -y xbanish

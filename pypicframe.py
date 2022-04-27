@@ -373,4 +373,12 @@ if override == 2:
         os.kill(pid, 9)
         subprocess.Popen([sys.argv[0]])
         exit()
+# hide the cursor so it doesn't show over the images
+try:
+    subprocess.Popen(["xbanish", "-a"])
+except subprocess.CalledProcessError:
+    print("xbanish has encountered an error and could not be run.")
+except FileNotFoundError:
+    print("xbanish not installed. Please install it to hide the cursor when images are displayed.")
+
 show_window(index_errors, index_main, override)
