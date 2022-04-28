@@ -62,7 +62,7 @@ if "errors" not in ls:
 
 def index_folder(folder):
     """Get contents of all necessary files in remote settings folder"""
-    db = {}
+    database = {}
     top_level = os.listdir(folder)
     folders = ["x", "xx", "xxx", "xxxx", "xxxxx"]
     for each in folders:
@@ -70,19 +70,23 @@ def index_folder(folder):
             new = os.listdir(folder + "/" + each)
             if new == []:
                 continue
-            db[each] = new
-            for each1 in enumerate(db[each]):
+            database[each] = new
+            for each1 in enumerate(database[each]):
                 if os.path.isdir(folder + "/" + each + "/" + each1[1]):
-                    del db[each][each1[0]]
+                    del database[each][each1[0]]
                 if each1[1].split(".")[-1].lower() not in file_types:
-                    del db[each][each1[0]]
+                    del database[each][each1[0]]
     delete = []
-    for each in db:
-        if db[each] == []:
+    print(database.items())
+    for each in database:
+        if database[each] == []:
             delete.append(each)
     for each in delete:
-        del db[each]
-    return db
+        del database[each]
+    size = 0
+    for each in database:
+        size += len(database[each])
+    return {"index": database, "size": size}
 
 
 def __mount__(device, path_dir):
@@ -117,7 +121,8 @@ class PyPicFrame(Gtk.Window):
         self.add(self.grid)
         self.errors = []
         self.image_index = image_index
-        if ((image_index == {}) and (image_override is None)):
+        self.displayed_image = None
+        if ((image_index["size"] == 0) and (image_override is None)):
             image_override = 2
         if image_override not in (1, 3):
             with open("/mnt/settings.json", "r") as file:
@@ -154,6 +159,9 @@ class PyPicFrame(Gtk.Window):
 
     def pick_pic(self):
         """Pick a random picture from the index. Replace displayed image with new image."""
+        # we only have, at most, one image to show. So don't change anything.
+        if self.image_index["size"] < 2:
+            return True
         if self.settings["honor_rating"]:
             num = rand.randint(1, 150)
             num = round(num, -1) / 10
@@ -171,10 +179,10 @@ class PyPicFrame(Gtk.Window):
             num = rand.randint(1, 6)
         string = "x" * num
         try:
-            opts = self.image_index[string]
+            opts = self.image_index["index"][string]
         except KeyError:
             test = index_folder("/mnt")
-            if test == {}:
+            if test["size"] == 0:
                 # the drive has likely been removed and has not been reinserted yet
                 # since we don't cache all the images into RAM, we can't do anything other
                 # than throw up an error since those are stored internally AND cached
@@ -188,6 +196,10 @@ class PyPicFrame(Gtk.Window):
         else:
             image = opts[0]
         path = "/mnt/" + string + "/" + image
+        # make sure we don't just reset the image. Pick a new one each time.
+        if self.displayed_image == path:
+            return self.pick_pic()
+        self.displayed_image = path
         print(f"Chose: {path}")
         # we know what image we want now. Now, remove the old one and use the new one
         try:
@@ -308,7 +320,7 @@ except Exception:
     print("Drive already mounted.")
 
 index_errors = {"errors": ["json_error.svg", "no_drive.svg", "no_pics.svg", "new_drive.svg"]}
-if ((index_main == {}) and (override is None)):
+if ((index_main["size"] == 0) and (override is None)):
     # check if folders exist
     ls = os.listdir("/mnt")
     total = 0
@@ -367,7 +379,7 @@ if override == 2:
     if pid != 0:
         while True:
             index_main = index_folder("/mnt")
-            if index_main != {}:
+            if index_main["size"] != 0:
                 break
             time.sleep(3)
         os.kill(pid, 9)
