@@ -45,7 +45,7 @@ def __eprint__(*args, **kwargs):
 
 if sys.version_info[0] == 2:
     __eprint__("Please run with Python 3 as Python 2 is End-of-Life.")
-    exit(2)
+    sys.exit(2)
 
 # supported file types
 file_types = ("jpg", "jpeg", "jpe", "png", "svg", "gif", "tif", "tiff")
@@ -56,8 +56,10 @@ if "errors" not in ls:
     try:
         os.chdir("/etc/pypicframe")
     except FileNotFoundError:
-        print("Data not available in current directory. Either install PyPicFrame to your system or run from within the local git repo.")
-        exit(2)
+        print("Data not available in current directory.", end=" ")
+        print("Either install PyPicFrame to your system or run from", end=" ")
+        print("within the local git repo.")
+        sys.exit(2)
 
 
 def index_folder(folder):
@@ -95,11 +97,10 @@ def __mount__(device, path_dir):
     But, that keeps throwing an 'Invalid Argument' error.
     Calling Mount with check_call is the safer option.
     """
-    pipe = subprocess.Popen(["sudo", "mount", device, path_dir],
+    with subprocess.Popen(["sudo", "mount", device, path_dir],
                             stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
-    out = pipe.stderr.read().decode()
-    print(out)
+                            stderr=subprocess.PIPE) as pipe:
+        out = pipe.stderr.read().decode()
     if "already mounted" in out:
         raise Exception
     if "does not exist" in out:
@@ -224,12 +225,12 @@ class PyPicFrame(Gtk.Window):
         self.set_position(Gtk.WindowPosition.CENTER)
         self.show_all()
 
-    def restart(self, button):
+    def restart(self):
         """Exit"""
         Gtk.main_quit("delete-event")
         self.destroy()
         subprocess.Popen([sys.argv[0]])
-        exit()
+        sys.exit()
 
 
 
@@ -237,11 +238,12 @@ def scale(image):
     """Scale an image up or down depending on what's needed"""
     screen_res = get_screen_res()
     image_res = (image.get_width(), image.get_height())
-    # we have horizontal realestate to spare. If vertical realestate matches, and
-    # horizontal realestate is equal to or greater than used realestate, return
-    # the image without modification
-    if (((image_res[1] - 10) <= screen_res[1] <= (image_res[1] + 10)) and (image_res[0] <= screen_res[0])):
-        return [image, image_res]
+    # we have horizontal realestate to spare. If vertical realestate matches,
+    # and horizontal realestate is equal to or greater than used realestate,
+    # return the image without modification
+    if (image_res[1] - 10) <= screen_res[1] <= (image_res[1] + 10):
+        if image_res[0] <= screen_res[0]:
+            return [image, image_res]
     # either the vertical realestate doesn't match, or the horizontal usage is
     # greater than what we have, or both
     # scale down situations first
@@ -255,19 +257,19 @@ def scale(image):
 
 def scale_down(image, screen_res, image_res):
     """Scale images down"""
-    arh = image_res[0] / image_res[1]
-    arw = image_res[1] / image_res[0]
-    nw = screen_res[1] * arw
-    nh = screen_res[0] * arh
+    aspect_ratio_to_height = image_res[0] / image_res[1]
+    aspect_ratio_to_width = image_res[1] / image_res[0]
+    new_width = screen_res[1] * aspect_ratio_to_width
+    new_height = screen_res[0] * aspect_ratio_to_height
     screen_area = screen_res[0] * screen_res[1]
-    nha = screen_res[0] * nh
-    nwa = screen_res[1] * nw
-    nhw = abs(nha - screen_area)
-    nww = abs(nwa - screen_area)
-    if nww <= nhw:
-        res = (nw, screen_res[1])
+    new_height_area = screen_res[0] * new_height
+    new_width_area = screen_res[1] * new_width
+    new_height_wasted = abs(new_height_area - screen_area)
+    new_width_wasted = abs(new_width_area - screen_area)
+    if new_width_wasted <= new_height_wasted:
+        res = (new_width, screen_res[1])
     else:
-        res = (screen_res[0], nh)
+        res = (screen_res[0], new_height)
     return [image.scale_simple(res[0], res[1],
                                GdkPixbuf.InterpType.BILINEAR), res]
 
@@ -352,7 +354,7 @@ if override == 1:
                 continue
             os.kill(pid, 9)
             subprocess.Popen([sys.argv[0]])
-            exit()
+            sys.exit()
 if override == 3:
     print("FORKED!")
     pid = os.fork()
@@ -370,7 +372,7 @@ if override == 3:
             os.mkdir("/mnt/" + (string * each))
         os.kill(pid, 9)
         subprocess.Popen([sys.argv[0]])
-        exit()
+        sys.exit()
 if override == 2:
     print("FORKED!")
     pid = os.fork()
@@ -384,7 +386,7 @@ if override == 2:
             time.sleep(3)
         os.kill(pid, 9)
         subprocess.Popen([sys.argv[0]])
-        exit()
+        sys.exit()
 # hide the cursor so it doesn't show over the images
 try:
     subprocess.Popen(["xbanish", "-a"])
