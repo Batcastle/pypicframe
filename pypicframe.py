@@ -239,8 +239,9 @@ def scale(image):
     screen_res = get_screen_res()
     image_res = (image.get_width(), image.get_height())
     # we have horizontal realestate to spare. If vertical realestate matches,
-    # and horizontal realestate is equal to or greater than used realestate,
+    # and horizontal realestate is equal to or greater than usable realestate,
     # return the image without modification
+    image = image.apply_embedded_orientation() # make sure the image is oriented correctly
     if (image_res[1] - 10) <= screen_res[1] <= (image_res[1] + 10):
         if image_res[0] <= screen_res[0]:
             return [image, image_res]
