@@ -31,6 +31,8 @@ import subprocess
 import time
 import shutil
 from Xlib.display import Display
+from ctypes import cdll, byref, create_string_buffer
+import psutil
 import gi
 
 gi.require_version('Gtk', '3.0')
@@ -62,6 +64,14 @@ if "errors" not in ls:
         sys.exit(2)
 
 
+def set_procname(newname):
+    """set procname for current process"""
+    libc = cdll.LoadLibrary('libc.so.6')    #Loading a 3rd party library C
+    buff = create_string_buffer(len(newname) + 1) #Note: One larger than the name (man prctl says that)
+    buff.value = bytes(newname, 'utf-8')               #Null terminated string as it should be
+    libc.prctl(15, byref(buff), 0, 0, 0) #Refer to "#define" of "/usr/include/linux/prctl.h" for the misterious value 16 & arg[3..5] are zero as the man page says.
+
+
 def index_folder(folder):
     """Get contents of all necessary files in remote settings folder"""
     database = {}
@@ -79,7 +89,6 @@ def index_folder(folder):
                 if each1[1].split(".")[-1].lower() not in file_types:
                     del database[each][each1[0]]
     delete = []
-    print(database.items())
     for each in database:
         if database[each] == []:
             delete.append(each)
@@ -105,6 +114,110 @@ def __mount__(device, path_dir):
         raise Exception
     if "does not exist" in out:
         raise OSError
+
+
+def __umount__(path_dir):
+    return subprocess.check_call(["sudo", "umount", path_dir])
+
+
+try:
+    try:
+        with open("/etc/pypicframe/internal_settings.json", "r") as file:
+            part = json.load(file)["part"]
+    except FileNotFoundError:
+        try:
+            with open("internal_settings.json", "r") as file:
+                part = json.load(file)["part"]
+        except FileNotFoundError:
+            print("Cannot Find Internal Settings File. Defaulting 'part' to /dev/sda1...")
+            part = "/dev/sda1"
+except json.decoder.JSONDecodeError:
+    print("Error Reading Internal Settings File. Defaulting 'part' to /dev/sda1...")
+    part = "/dev/sda1"
+    override = 0
+
+# This code handles auto-mounting and adaptive handling of that situation for PyPicFrame
+if "--no-fork" not in sys.argv:
+    # GUI_pid = os.fork()
+    GUI_pid = -1
+    print(f"Background process: {GUI_pid}")
+    if GUI_pid != 0:
+        # status indicator:
+        #   0: device not attached
+        #   1: device attached but not mounted
+        #   2: device attached and mounted
+        #
+        # These are only to be set AFTER handling the above status, but checked for
+        # before handling.
+        set_procname("ppf-mounter")
+
+
+        def restart_child(pid, options=[]):
+            if pid is not None:
+                try:
+                    os.kill(pid, 15)
+                    os.kill(pid, 9)
+                except ProcessLookupError:
+                    print(f"Process { pid } not found.")
+            command = [sys.argv[0], "--no-fork"]
+            if isinstance(options, list):
+                command = command + options
+            elif isinstance(options, str):
+                command.append(options)
+            print(command)
+            new_pid = subprocess.Popen(command).pid
+            return new_pid
+
+
+        status = 0
+        while True:
+            status_kernel = subprocess.check_output(["lsblk", "--json",
+                                                     "--output",
+                                                     "path,mountpoints"]).decode()
+            status_kernel = json.loads(status_kernel)["blockdevices"]
+            index = -1
+            for each in status_kernel:
+                if each["path"] == part:
+                    index = each
+                    break
+            if index == -1:
+                # device not attached. Handle.
+                if status == 2:
+                    __umount__("/mnt")
+                if status != 0:
+                    GUI_pid = restart_child(GUI_pid, "--no-device")
+                elif GUI_pid == -1:
+                    # Initialize with no device flag
+                    GUI_pid = restart_child(None, "--no-device")
+                status = 0
+                time.sleep(3)
+                continue
+            if "/mnt" not in index["mountpoints"]:
+                # device attached but not mounted. Handle.
+                try:
+                    __mount__(part, "/mnt")
+                except OSError:
+                    # pass
+                    print("Drive not mountable.")
+                    time.sleep(3)
+                except Exception:
+                    print("Drive already mounted.")
+                if os.listdir("/mnt") == []:
+                    GUI_pid = restart_child(GUI_pid, "--setup")
+                    time.sleep(1)
+                status = 1
+                continue
+            if GUI_pid == -1:
+                # Initialize
+                GUI_pid = subprocess.Popen(sys.argv + ["--no-fork"]).pid
+                status = 2
+                continue
+            if status != 2:
+                # device NEWLY attached AND mounted. Handle.
+                GUI_pid = restart_child(GUI_pid)
+                status = 2
+                continue
+            time.sleep(2)
 
 
 def get_screen_res():
@@ -294,34 +407,16 @@ def show_window(errors, index, override):
 
 
 override=None
-try:
-    try:
-        with open("/etc/pypicframe/internal_settings.json", "r") as file:
-            part = json.load(file)["part"]
-    except FileNotFoundError:
-        try:
-            with open("internal_settings.json", "r") as file:
-                part = json.load(file)["part"]
-        except FileNotFoundError:
-            print("Cannot Find Internal Settings File. Defaulting 'part' to /dev/sda1...")
-            part = "/dev/sda1"
-except json.decoder.JSONDecodeError:
-    print("Error Reading Internal Settings File. Defaulting 'part' to /dev/sda1...")
-    part = "/dev/sda1"
-    override = 0
+if "--setup" in sys.argv:
+    override = 3
+elif "--no-device" in sys.argv:
+    override = 1
 
 try:
-    __mount__(part, "/mnt")
     index_main = index_folder("/mnt")
 except OSError:
-    # pass
     index_main = {}
     override = 1
-    print("Drive not mountable.")
-except Exception:
-    index_main = index_folder("/mnt")
-    print("Drive already mounted.")
-
 index_errors = {"errors": ["json_error.svg", "no_drive.svg", "no_pics.svg", "new_drive.svg"]}
 if ((index_main["size"] == 0) and (override is None)):
     # check if folders exist
@@ -341,27 +436,16 @@ if ((index_main["size"] == 0) and (override is None)):
                 os.mkdir("/mnt/" + (string * each))
         if not os.path.exists("/mnt/settings.json"):
             shutil.copyfile("remote_data/settings.json", "/mnt/settings.json")
-if override == 1:
-    print("FORKED!")
-    pid = os.fork()
-    """ from here, the CHILD needs to be the UI. The parent should watch for the drive,
-    and once present, kill the child, recurse, then exit."""
-    if pid != 0:
-        while True:
-            try:
-                __mount__(part, "/mnt")
-            except OSError:
-                time.sleep(1)
-                continue
-            os.kill(pid, 9)
-            subprocess.Popen([sys.argv[0]])
-            sys.exit()
-if override == 3:
+
+print(override)
+print(sys.argv)
+if override == 3: # need to set up drive
     print("FORKED!")
     pid = os.fork()
     """ from here, the CHILD needs to be the UI. The parent should set up the drive,
     and once done, kill the child, recurse, then exit."""
     if pid != 0:
+        set_procname("ppf-setup")
         time.sleep(10)
         # set up the drive
         if not os.path.exists("/mnt/README.txt"):
@@ -374,7 +458,7 @@ if override == 3:
         os.kill(pid, 9)
         subprocess.Popen([sys.argv[0]])
         sys.exit()
-if override == 2:
+if override == 2: # drive is set up but nothing in Index
     print("FORKED!")
     pid = os.fork()
     """ from here, the CHILD needs to be the UI. The parent should watch for images.
@@ -397,4 +481,11 @@ if "--testing" not in sys.argv:
     except FileNotFoundError:
         print("xbanish not installed. Please install it to hide the cursor when images are displayed.")
 
+# add a short delay so that the parent process can get the drive mounted
+time.sleep(3)
+for each in psutil.process_iter():
+    if each.name() == "ppf-main":
+        print("Process found!")
+        sys.exit()
+set_procname("ppf-main")
 show_window(index_errors, index_main, override)
