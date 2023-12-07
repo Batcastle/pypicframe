@@ -25,5 +25,5 @@ sudo rm -rfv /etc/pypicframe
 sudo rm -rfv /usr/local/bin/pypicframe
 sudo rm -rfv /etc/xdg/autostart/pypicframe.desktop
 g=$(groups | sed 's/mount //g')
-sudo usermod -G $g
+sudo usermod -G $g $(whoami)
 sudo groupdel mount
