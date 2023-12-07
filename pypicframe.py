@@ -212,7 +212,7 @@ if "--no-fork" not in sys.argv:
         while True:
             status_kernel = subprocess.check_output(["lsblk", "--json",
                                                      "--output",
-                                                     "path,mountpoints"]).decode()
+                                                     "path,mountpoint"]).decode()
             status_kernel = json.loads(status_kernel)["blockdevices"]
             index = -1
             for each in status_kernel:
@@ -231,7 +231,7 @@ if "--no-fork" not in sys.argv:
                 status = 0
                 time.sleep(3)
                 continue
-            if "/mnt" not in index["mountpoints"]:
+            if "/mnt" != index["mountpoint"]:
                 # device attached but not mounted. Handle.
                 try:
                     __mount__(part, "/mnt")
