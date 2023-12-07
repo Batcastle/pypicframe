@@ -1,3 +1,4 @@
 {
-	"part": "/dev/sde1"
+	"part": "/dev/sde1",
+	"logfile": "./pypicframe.log"
 }

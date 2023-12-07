@@ -3,7 +3,7 @@
 #
 #  pypicframe.py
 #
-#  Copyright 2022 Thomas Castleman <contact@draugeros.org>
+#  Copyright 2023 Thomas Castleman <batcastle@draugeros.org>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -49,6 +49,61 @@ if sys.version_info[0] == 2:
     __eprint__("Please run with Python 3 as Python 2 is End-of-Life.")
     sys.exit(2)
 
+
+try:
+    try:
+        with open("/etc/pypicframe/internal_settings.json", "r") as file:
+            settings = json.load(file)
+    except FileNotFoundError:
+        try:
+            with open("internal_settings.json", "r") as file:
+                settings = json.load(file)
+        except FileNotFoundError:
+            print("Cannot Find Internal Settings File. Defaulting internal backups...")
+            settings = {
+                            "part": "/dev/sde1",
+                            "logfile": "./pypicframe.log"
+                        }
+    part = settings["part"]
+    logfile = settings["logfile"]
+except json.decoder.JSONDecodeError:
+    print("Error Reading Internal Settings File. Defaulting internal backups...")
+    settings = {
+                            "part": "/dev/sde1",
+                            "logfile": "./pypicframe.log"
+                        }
+    part = settings["part"]
+    logfile = settings["logfile"]
+    override = 0
+
+
+def log(*args, **kwargs):
+    """Print log data to STDOUT and log file"""
+    try:
+        global logfile
+    except NameError:
+        try:
+            with open("/etc/pypicframe/internal_settings.json", "r") as file:
+                settings = json.load(file)
+        except FileNotFoundError:
+            try:
+                with open("internal_settings.json", "r") as file:
+                    settings = json.load(file)
+            except FileNotFoundError:
+                settings = {
+                                "part": "/dev/sde1",
+                                "logfile": "./pypicframe.log"
+                            }
+        logfile = settings["logfile"]
+    try:
+        with open(logfile, "a+") as file:
+            file.write(*args, **kwargs)
+    except PermissionError:
+        with open("./pypicframe.log", "a+") as file:
+            file.write(*args, **kwargs)
+    print(*args, **kwargs)
+
+
 # supported file types
 file_types = ("jpg", "jpeg", "jpe", "png", "svg", "gif", "tif", "tiff")
 
@@ -58,9 +113,9 @@ if "errors" not in ls:
     try:
         os.chdir("/etc/pypicframe")
     except FileNotFoundError:
-        print("Data not available in current directory.", end=" ")
-        print("Either install PyPicFrame to your system or run from", end=" ")
-        print("within the local git repo.")
+        log("Data not available in current directory.", end=" ")
+        log("Either install PyPicFrame to your system or run from", end=" ")
+        log("within the local git repo.")
         sys.exit(2)
 
 
@@ -120,27 +175,11 @@ def __umount__(path_dir):
     return subprocess.check_call(["sudo", "umount", path_dir])
 
 
-try:
-    try:
-        with open("/etc/pypicframe/internal_settings.json", "r") as file:
-            part = json.load(file)["part"]
-    except FileNotFoundError:
-        try:
-            with open("internal_settings.json", "r") as file:
-                part = json.load(file)["part"]
-        except FileNotFoundError:
-            print("Cannot Find Internal Settings File. Defaulting 'part' to /dev/sda1...")
-            part = "/dev/sda1"
-except json.decoder.JSONDecodeError:
-    print("Error Reading Internal Settings File. Defaulting 'part' to /dev/sda1...")
-    part = "/dev/sda1"
-    override = 0
-
 # This code handles auto-mounting and adaptive handling of that situation for PyPicFrame
 if "--no-fork" not in sys.argv:
     # GUI_pid = os.fork()
     GUI_pid = -1
-    print(f"Background process: {GUI_pid}")
+    log(f"Background process: {GUI_pid}")
     if GUI_pid != 0:
         # status indicator:
         #   0: device not attached
@@ -158,13 +197,13 @@ if "--no-fork" not in sys.argv:
                     os.kill(pid, 15)
                     os.kill(pid, 9)
                 except ProcessLookupError:
-                    print(f"Process { pid } not found.")
+                    log(f"Process { pid } not found.")
             command = [sys.argv[0], "--no-fork"]
             if isinstance(options, list):
                 command = command + options
             elif isinstance(options, str):
                 command.append(options)
-            print(command)
+            log(command)
             new_pid = subprocess.Popen(command).pid
             return new_pid
 
@@ -198,10 +237,10 @@ if "--no-fork" not in sys.argv:
                     __mount__(part, "/mnt")
                 except OSError:
                     # pass
-                    print("Drive not mountable.")
+                    log("Drive not mountable.")
                     time.sleep(3)
                 except Exception:
-                    print("Drive already mounted.")
+                    log("Drive already mounted.")
                 if os.listdir("/mnt") == []:
                     GUI_pid = restart_child(GUI_pid, "--setup")
                     time.sleep(1)
@@ -242,7 +281,7 @@ class PyPicFrame(Gtk.Window):
             with open("/mnt/settings.json", "r") as file:
                 self.settings = json.load(file)
         else:
-            print("Cannot find drive...")
+            log("Cannot find drive...")
             with open("remote_data/settings.json", "r") as file:
                 self.settings = json.load(file)
         self.settings["show_for"] *= 1000
@@ -256,7 +295,7 @@ class PyPicFrame(Gtk.Window):
     def grab_error_files(self, errors):
         """Grab error files and pull them into memory"""
         for each in errors["errors"]:
-            print(f"Grabbing errors/{each}")
+            log(f"Grabbing errors/{each}")
             image = GdkPixbuf.Pixbuf.new_from_file("errors/" + each)
             image = scale(image)[0]
             self.errors.append(image)
@@ -314,7 +353,7 @@ class PyPicFrame(Gtk.Window):
         if self.displayed_image == path:
             return self.pick_pic()
         self.displayed_image = path
-        print(f"Chose: {path}")
+        log(f"Chose: {path}")
         # we know what image we want now. Now, remove the old one and use the new one
         try:
             image = GdkPixbuf.Pixbuf.new_from_file(path)
@@ -437,10 +476,10 @@ if ((index_main["size"] == 0) and (override is None)):
         if not os.path.exists("/mnt/settings.json"):
             shutil.copyfile("remote_data/settings.json", "/mnt/settings.json")
 
-print(override)
-print(sys.argv)
+log(override)
+log(sys.argv)
 if override == 3: # need to set up drive
-    print("FORKED!")
+    log("FORKED!")
     pid = os.fork()
     """ from here, the CHILD needs to be the UI. The parent should set up the drive,
     and once done, kill the child, recurse, then exit."""
@@ -459,7 +498,7 @@ if override == 3: # need to set up drive
         subprocess.Popen([sys.argv[0]])
         sys.exit()
 if override == 2: # drive is set up but nothing in Index
-    print("FORKED!")
+    log("FORKED!")
     pid = os.fork()
     """ from here, the CHILD needs to be the UI. The parent should watch for images.
     Once images are found, it should kill the child, recurse, then exit."""
@@ -477,15 +516,15 @@ if "--testing" not in sys.argv:
     try:
         subprocess.Popen(["xbanish", "-a"])
     except subprocess.CalledProcessError:
-        print("xbanish has encountered an error and could not be run.")
+        log("xbanish has encountered an error and could not be run.")
     except FileNotFoundError:
-        print("xbanish not installed. Please install it to hide the cursor when images are displayed.")
+        log("xbanish not installed. Please install it to hide the cursor when images are displayed.")
 
 # add a short delay so that the parent process can get the drive mounted
 time.sleep(3)
 for each in psutil.process_iter():
     if each.name() == "ppf-main":
-        print("Process found!")
+        log("Process found!")
         sys.exit()
 set_procname("ppf-main")
 show_window(index_errors, index_main, override)
