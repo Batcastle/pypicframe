@@ -77,7 +77,7 @@ except json.decoder.JSONDecodeError:
     override = 0
 
 
-def log(*args, **kwargs):
+def log(output):
     """Print log data to STDOUT and log file"""
     try:
         global logfile
@@ -97,11 +97,11 @@ def log(*args, **kwargs):
         logfile = settings["logfile"]
     try:
         with open(logfile, "a+") as file:
-            file.write(*args, **kwargs)
+            file.write(output)
     except PermissionError:
         with open("./pypicframe.log", "a+") as file:
-            file.write(*args, **kwargs)
-    print(*args, **kwargs)
+            file.write(output)
+    print(output)
 
 
 # supported file types
