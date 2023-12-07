@@ -476,8 +476,8 @@ if ((index_main["size"] == 0) and (override is None)):
         if not os.path.exists("/mnt/settings.json"):
             shutil.copyfile("remote_data/settings.json", "/mnt/settings.json")
 
-log(override)
-log(sys.argv)
+log(str(override))
+log(str(sys.argv))
 if override == 3: # need to set up drive
     log("FORKED!")
     pid = os.fork()
