@@ -1,4 +1,4 @@
 {
-	"part": "/dev/sde1",
-	"logfile": "./pypicframe.log"
+	"part": "/dev/sda1",
+	"logfile": "/tmp/pypicframe.log"
 }
