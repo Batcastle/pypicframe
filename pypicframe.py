@@ -98,9 +98,11 @@ def log(output):
     try:
         with open(logfile, "a+") as file:
             file.write(output)
+            file.write("\n")
     except PermissionError:
         with open("./pypicframe.log", "a+") as file:
             file.write(output)
+            file.write("\n")
     print(output)
 
 
